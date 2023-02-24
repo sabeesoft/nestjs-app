@@ -3,70 +3,70 @@ import { PagedResponse } from 'src/utils/response';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { Post } from './entities/post.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class PostService {
-  private posts = new Map<number, Post>()
 
-  constructor() {
-
-    for (let index = 0; index < 100; index++) {
-
-      const _id = Math.random()
-
-      const _post: Post = {
-        description: `There are many variations of passages of Lorem Ipsum available, but the majority have suffered alteration in some form, by injected humour, or randomised words which don't look even slightly believable. If you are going to use a passage of Lorem Ipsum, you`,
-        createdAt: new Date().toISOString(),
-        title: `Post ${_id}`,
-        id: _id
-      }
-
-      this.posts.set(_id, _post)
-    }
+  constructor(
+    @InjectRepository(Post)
+    private readonly postsRepository: Repository<Post>,
+  ) {
   }
 
-  create(createPostDto: CreatePostDto) {
-    const post: Post = {
-      description: createPostDto.description,
-      createdAt: new Date().toISOString(),
-      title: createPostDto.title,
-      id: Math.random()
-    }
+  async create(createPostDto: CreatePostDto) {
+    const post = this.postsRepository.create({
+      ...createPostDto,
+    });
 
-    this.posts.set(post.id, post)
+    const savedPost = await this.postsRepository.save(post)
+    return savedPost;
   }
 
-  findAll(q: string, page: number, size: number) {
-    const _posts = Array.from(this.posts.values())
-    const postItemsCount = _posts.length;
-    const startIndex = size * page
-    const pagesCount = Math.ceil(postItemsCount / size)
-    const response = new PagedResponse<Post>(_posts.filter(post => post.title.includes(q)).splice(startIndex, size), postItemsCount, pagesCount, page)
-    return response
+  async findAll(q: string, page: number, size: number) {
+    const skip = size * page
+
+    const [posts, count] = await this.postsRepository.findAndCount({
+      skip: skip,
+      take: size,
+      where: {
+        title: q || undefined,
+      },
+    });
+
+    const pages = Math.ceil(count / size);
+
+    return new PagedResponse<Post>(posts, count, pages, page)
   }
 
-  findOne(id: number) {
+  async findOne(id: number) {
     return this.findPostByIdOrFail(id)
   }
 
-  update(id: number, updatePostDto: UpdatePostDto) {
+  async update(id: number, updatePostDto: UpdatePostDto) {
     const post = this.findPostByIdOrFail(id)
-    const updatedPost = { ...post, ...updatePostDto }
-    this.posts.set(id, updatedPost)
-    return updatedPost
+    return this.postsRepository.save({
+      id: id,
+      ...post,
+      ...updatePostDto,
+      updatedAt: new Date().toISOString(),
+    });
+
   }
 
-  remove(id: number) {
-    const post = this.findPostByIdOrFail(id)
-    this.posts.delete(id)
+  async remove(id: number) {
+    const post = await this.findPostByIdOrFail(id)
+    await this.postsRepository.delete({ id: post.id })
     return post
   }
 
-  private findPostByIdOrFail(id: number) {
-    const post = this.posts.get(id);
-    if (!post) {
+  private async findPostByIdOrFail(id: number) {
+    try {
+      return this.postsRepository.findOneByOrFail({ id: id })
+    } catch (error) {
+      console.warn(error);
       throw new NotFoundException(`Post with id = ${id} not found`)
     }
-    return post
   }
 }
