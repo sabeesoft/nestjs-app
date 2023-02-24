@@ -8,8 +8,24 @@ import { Post } from './entities/post.entity';
 export class PostService {
   private posts = new Map<number, Post>()
 
-  create(createPostDto: CreatePostDto) {
+  constructor() {
 
+    for (let index = 0; index < 100; index++) {
+
+      const _id = Math.random()
+
+      const _post: Post = {
+        description: `There are many variations of passages of Lorem Ipsum available, but the majority have suffered alteration in some form, by injected humour, or randomised words which don't look even slightly believable. If you are going to use a passage of Lorem Ipsum, you`,
+        createdAt: new Date().toISOString(),
+        title: `Post ${_id}`,
+        id: _id
+      }
+
+      this.posts.set(_id, _post)
+    }
+  }
+
+  create(createPostDto: CreatePostDto) {
     const post: Post = {
       description: createPostDto.description,
       createdAt: new Date().toISOString(),
@@ -20,9 +36,12 @@ export class PostService {
     this.posts.set(post.id, post)
   }
 
-  findAll() {
+  findAll(q: string, page: number, size: number) {
     const _posts = Array.from(this.posts.values())
-    const response = new PagedResponse<Post>(_posts, _posts.length, 1, 1)
+    const postItemsCount = _posts.length;
+    const startIndex = size * page
+    const pagesCount = Math.ceil(postItemsCount / size)
+    const response = new PagedResponse<Post>(_posts.filter(post => post.title.includes(q)).splice(startIndex, size), postItemsCount, pagesCount, page)
     return response
   }
 
@@ -34,7 +53,7 @@ export class PostService {
     const post = this.findPostByIdOrFail(id)
     const updatedPost = { ...post, ...updatePostDto }
     this.posts.set(id, updatedPost)
-    return updatePostDto
+    return updatedPost
   }
 
   remove(id: number) {
