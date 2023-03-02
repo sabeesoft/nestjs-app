@@ -5,4 +5,6 @@ export class CreatePostDto {
     title: string
     @Length(12, 256)
     description: string
+
+    userId: number
 }

@@ -18,6 +18,9 @@ export class PostService {
   async create(createPostDto: CreatePostDto) {
     const post = this.postsRepository.create({
       ...createPostDto,
+      user: {
+        id: 1
+      }
     });
 
     const savedPost = await this.postsRepository.save(post)
@@ -41,7 +44,25 @@ export class PostService {
   }
 
   async findOne(id: number) {
-    return this.findPostByIdOrFail(id)
+    const post = await this.postsRepository.findOne({
+      where: { id: id },
+      select: {
+        user: {
+          name: true
+        },
+        likes: true
+      },
+      relations: {
+        user: true,
+        likes: true
+      }
+    })
+
+    if (!post) {
+      throw new NotFoundException(`Post with id = ${id} not found`)
+    }
+
+    return post
   }
 
   async update(id: number, updatePostDto: UpdatePostDto) {

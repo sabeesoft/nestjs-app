@@ -1,4 +1,6 @@
-import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from "typeorm"
+import { Like } from "src/likes/entities/like.entity"
+import { User } from "src/users/entities/user.entity"
+import { BaseEntity, Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm"
 
 @Entity()
 export class Post extends BaseEntity {
@@ -28,4 +30,10 @@ export class Post extends BaseEntity {
         nullable: true,
     })
     updatedAt: string
+
+    @ManyToOne(() => User, (user) => user.posts)
+    user: User;
+
+    @OneToMany(() => Like, (like) => like.post)
+    likes: Like[]
 }
