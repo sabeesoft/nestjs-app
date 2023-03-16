@@ -52,9 +52,11 @@ export class PostService {
         },
         likes: true
       },
+     
       relations: {
         user: true,
-        likes: true
+        likes: true,
+        comments: true
       }
     })
 
@@ -80,6 +82,22 @@ export class PostService {
     const post = await this.findPostByIdOrFail(id)
     await this.postsRepository.delete({ id: post.id })
     return post
+  }
+
+  getAllComments() {
+    // SELECT * FROM posts WHERE user_id = 4
+    // SELECT * FROM comment WHERE user_id = 4
+
+    // { name: "John", id: 4 ,comments:[{}]}
+
+    return this.postsRepository.find({
+      where: {
+        id: 4
+      },
+      select: {
+        comments: true
+      }
+    })
   }
 
   private async findPostByIdOrFail(id: number) {

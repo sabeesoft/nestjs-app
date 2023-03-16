@@ -41,4 +41,21 @@ export class UsersService {
   remove(id: number) {
     throw new Error("Not implemented");
   }
+
+  getAllComments() {
+    // SELECT * FROM users WHERE user_id = 4
+    // SELECT * FROM comment WHERE user_id = 4
+
+    // { name: "John", id: 4 ,comments:[{}]}
+
+    return this.userRepository.find({
+      where: {
+        id: 4
+      },
+      select: {
+        comments: true
+      }
+    })
+
+  }
 }
