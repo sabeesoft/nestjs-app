@@ -6,6 +6,27 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from './users/users.module';
 import { LikesModule } from './likes/likes.module';
 import { CommentModule } from './comment/comment.module';
+import { Post } from './post/entities/post.entity';
+import { PostService } from './post/post.service';
+
+import { Resource, Database } from '@adminjs/typeorm';
+import { AdminModule } from '@adminjs/nestjs'
+import AdminJS from 'adminjs';
+import { User } from './users/entities/user.entity';
+
+AdminJS.registerAdapter({ Resource, Database });
+
+const DEFAULT_ADMIN = {
+  email: 'admin@example.com',
+  password: 'password',
+}
+
+const authenticate = async (email: string, password: string) => {
+  if (email === DEFAULT_ADMIN.email && password === DEFAULT_ADMIN.password) {
+    return Promise.resolve(DEFAULT_ADMIN)
+  }
+  return null
+}
 
 @Module({
   imports: [
@@ -18,11 +39,31 @@ import { CommentModule } from './comment/comment.module';
       // entities: [__dirname + '/../**/*.entity{.ts,.js}'],
       autoLoadEntities: true,
     }),
+    TypeOrmModule.forFeature([Post]),
     PostModule,
     UsersModule,
     LikesModule,
-    CommentModule],
+    CommentModule,
+    AdminModule.createAdminAsync({
+      useFactory: () => ({
+        adminJsOptions: {
+          rootPath: '/admin',
+          resources: [User, Post],
+        },
+        auth: {
+          authenticate,
+          cookieName: 'adminjs',
+          cookiePassword: 'secret'
+        },
+        sessionOptions: {
+          resave: true,
+          saveUninitialized: true,
+          secret: 'secret'
+        },
+      }),
+    }),
+  ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, PostService],
 })
 export class AppModule { }
