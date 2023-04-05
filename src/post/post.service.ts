@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PagedResponse } from 'src/utils/response';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
@@ -8,6 +8,8 @@ import { Repository } from 'typeorm';
 
 @Injectable()
 export class PostService {
+
+  private readonly logger = new Logger(PostService.name);
 
   constructor(
     @InjectRepository(Post)
@@ -40,6 +42,8 @@ export class PostService {
 
     const pages = Math.ceil(count / size);
 
+    this.logger.verbose("Get all posts count: " + count)
+
     return new PagedResponse<Post>(posts, count, pages, page)
   }
 
@@ -52,7 +56,7 @@ export class PostService {
         },
         likes: true
       },
-     
+
       relations: {
         user: true,
         likes: true,
@@ -61,6 +65,7 @@ export class PostService {
     })
 
     if (!post) {
+      // logging
       throw new NotFoundException(`Post with id = ${id} not found`)
     }
 
@@ -104,7 +109,7 @@ export class PostService {
     try {
       return this.postsRepository.findOneByOrFail({ id: id })
     } catch (error) {
-      console.warn(error);
+      this.logger.error(error);
       throw new NotFoundException(`Post with id = ${id} not found`)
     }
   }
